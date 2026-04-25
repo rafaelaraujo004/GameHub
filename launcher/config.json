@@ -1,0 +1,26 @@
+{
+  "emulatorPath": "C:\\Program Files\\PCSX2\\pcsx2.exe",
+  "emulatorSearchRoots": [
+    "C:\\Users\\Rafael Araújo\\AppData\\Local"
+  ],
+  "emulatorArgs": [],
+  "boot": {
+    "mode": "nogui",
+    "fullscreen": true,
+    "fastBoot": true
+  },
+  "gamesDir": "C:\\GameHub\\games",
+  "port": 3001,
+  "host": "127.0.0.1",
+  "allowedOrigins": [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+  ],
+  "igdb": {
+    "clientId": "",
+    "clientSecret": ""
+  },
+  "rawg": {
+    "apiKey": "3234547000a14c41b4c94e61610d783e"
+  }
+}
