@@ -64,6 +64,24 @@ Esse comando faz:
 - `npm install`
 - `npm run launcher:start`
 
+## Distribuir para usuarios finais (sem Node/Git)
+
+Gerar launcher standalone:
+
+```bash
+npm run launcher:build-exe
+```
+
+Arquivos gerados em `launcher/release`:
+- `GameHubLauncher.exe`
+- `config.json`
+- `README-rapido.txt`
+
+Entrega recomendada para terceiros:
+- enviar a pasta `launcher/release` compactada
+- pedir para ajustar `config.json` (caminho do PCSX2)
+- executar `GameHubLauncher.exe` antes de abrir o link da Vercel
+
 ## API
 
 ### `POST /play`

@@ -9,9 +9,16 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CONFIG_PATH = path.join(__dirname, 'config.json');
-const CACHE_PATH = path.join(__dirname, 'games_cache.json');
-const METADATA_CACHE_PATH = path.join(__dirname, 'metadata_cache.json');
+
+function getRuntimeLauncherDir() {
+  const hasPkg = Boolean(process?.pkg);
+  return hasPkg ? path.dirname(process.execPath) : __dirname;
+}
+
+const RUNTIME_LAUNCHER_DIR = getRuntimeLauncherDir();
+const CONFIG_PATH = path.join(RUNTIME_LAUNCHER_DIR, 'config.json');
+const CACHE_PATH = path.join(RUNTIME_LAUNCHER_DIR, 'games_cache.json');
+const METADATA_CACHE_PATH = path.join(RUNTIME_LAUNCHER_DIR, 'metadata_cache.json');
 const METADATA_CACHE_VERSION = 'ps2-v2';
 const MAX_BODY_BYTES = 8 * 1024;
 const ALLOWED_GAME_EXTENSIONS = new Set(['.iso', '.bin', '.img', '.chd', '.cue', '.mdf', '.nrg', '.cso', '.zso', '.isz', '.elf']);
@@ -1191,7 +1198,7 @@ function selectAllowedOrigin(reqOrigin, allowedOrigins) {
   return '';
 }
 
-async function start() {
+export async function start() {
   await ensureFile(CACHE_PATH, '{\n  "games": []\n}\n');
   await ensureFile(METADATA_CACHE_PATH, '{\n  "items": []\n}\n');
 
@@ -1330,7 +1337,13 @@ async function start() {
   });
 }
 
-start().catch((error) => {
-  log('ERROR', 'Erro fatal ao iniciar launcher', String(error));
-  process.exit(1);
-});
+const isDirectRun = process.argv[1]
+  ? path.resolve(process.argv[1]) === path.resolve(__filename)
+  : false;
+
+if (isDirectRun || Boolean(process?.pkg)) {
+  start().catch((error) => {
+    log('ERROR', 'Erro fatal ao iniciar launcher', String(error));
+    process.exit(1);
+  });
+}

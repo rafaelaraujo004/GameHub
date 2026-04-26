@@ -3,11 +3,19 @@ import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { start as startLauncherServer } from './index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '..');
-const CONFIG_PATH = path.join(__dirname, 'config.json');
+
+function getRuntimeLauncherDir() {
+  const hasPkg = Boolean(process?.pkg);
+  return hasPkg ? path.dirname(process.execPath) : __dirname;
+}
+
+const RUNTIME_LAUNCHER_DIR = getRuntimeLauncherDir();
+const CONFIG_PATH = path.join(RUNTIME_LAUNCHER_DIR, 'config.json');
 
 async function loadHostPort() {
   try {
@@ -118,6 +126,14 @@ function killProcess(pid) {
 }
 
 function startLauncherProcess() {
+  if (Boolean(process?.pkg)) {
+    startLauncherServer().catch((error) => {
+      console.error(`Falha ao iniciar launcher standalone: ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    });
+    return;
+  }
+
   const child = spawn(process.execPath, ['launcher/index.js'], {
     cwd: REPO_ROOT,
     stdio: 'inherit',
