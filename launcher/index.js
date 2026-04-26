@@ -34,6 +34,7 @@ function log(level, message, extra = '') {
 function respondJson(res, statusCode, payload, origin) {
   if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
     res.setHeader('Vary', 'Origin');
   }
 
@@ -1155,7 +1156,20 @@ async function processPlayJob(jobId, payload, config) {
 
 function selectAllowedOrigin(reqOrigin, allowedOrigins) {
   if (!reqOrigin) return '';
-  return allowedOrigins.includes(reqOrigin) ? reqOrigin : '';
+
+  for (const allowedOrigin of allowedOrigins) {
+    if (allowedOrigin === reqOrigin) return reqOrigin;
+
+    // Suporta wildcard em subdominios HTTPS, ex: https://*.vercel.app
+    if (allowedOrigin.startsWith('https://*.')) {
+      const suffix = allowedOrigin.slice('https://*.'.length);
+      if (reqOrigin.startsWith('https://') && reqOrigin.slice('https://'.length).endsWith(`.${suffix}`)) {
+        return reqOrigin;
+      }
+    }
+  }
+
+  return '';
 }
 
 async function start() {
@@ -1191,13 +1205,20 @@ async function start() {
         return;
       }
 
-      res.writeHead(204, {
+      const requestedPrivateNetwork = String(req.headers['access-control-request-private-network'] ?? '').toLowerCase() === 'true';
+      const preflightHeaders = {
         'Access-Control-Allow-Origin': origin,
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Max-Age': '600',
         Vary: 'Origin',
-      });
+      };
+
+      if (requestedPrivateNetwork) {
+        preflightHeaders['Access-Control-Allow-Private-Network'] = 'true';
+      }
+
+      res.writeHead(204, preflightHeaders);
       res.end();
       return;
     }

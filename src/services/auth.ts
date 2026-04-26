@@ -1,5 +1,6 @@
 import { signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, googleProvider, firebaseInitError } from './firebase';
+import { logError } from '../utils/logger';
 
 function getFirebaseUnavailableError(): Error {
   return new Error(
@@ -25,5 +26,12 @@ export function onAuthChange(callback: (user: User | null) => void): () => void 
     callback(null);
     return () => undefined;
   }
-  return onAuthStateChanged(auth, callback);
+  return onAuthStateChanged(
+    auth,
+    callback,
+    (error) => {
+      logError('auth.onAuthChange', error);
+      callback(null);
+    }
+  );
 }

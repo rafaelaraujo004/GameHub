@@ -110,7 +110,7 @@ function isNetworkFetchError(error: unknown): boolean {
 }
 
 function getLauncherOfflineMessage(): string {
-  return `Nao foi possivel conectar ao launcher local (${LAUNCHER_BASE_URL}). Inicie com npm run launcher:start.`;
+  return `Nao foi possivel conectar ao launcher local (${LAUNCHER_BASE_URL}). Em deploy (Vercel), o launcher precisa estar rodando no seu PC. Inicie com npm run launcher:start.`;
 }
 
 async function ensureLauncherRunningInBackground(): Promise<boolean> {

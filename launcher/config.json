@@ -8,7 +8,8 @@
     "http://localhost:4173",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:4173",
-    "https://game-hub-lake-chi.vercel.app"
+    "https://game-hub-lake-chi.vercel.app",
+    "https://*.vercel.app"
   ],
   "emulatorArgs": [],
   "emulatorSearchRoots": [],
