@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { loginWithGoogle } from '../services/auth';
 import { useToastStore } from '../store';
+import { getFirebaseErrorMessage } from '../utils/firebaseError';
+import { logError } from '../utils/logger';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -14,7 +16,8 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
       if (code !== 'auth/popup-closed-by-user') {
-        addToast('Erro ao fazer login. Tente novamente.', 'error');
+        logError('LoginPage.handleLogin', err, { code: code ?? 'unknown' });
+        addToast(getFirebaseErrorMessage(err), 'error');
       }
     } finally {
       setLoading(false);
