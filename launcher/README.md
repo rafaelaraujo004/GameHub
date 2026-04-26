@@ -72,10 +72,17 @@ Gerar launcher standalone:
 npm run launcher:build-exe
 ```
 
+Gerar pacote ZIP pronto para enviar a terceiros:
+
+```bash
+npm run launcher:package-release
+```
+
 Arquivos gerados em `launcher/release`:
 - `GameHubLauncher.exe`
 - `config.json`
 - `README-rapido.txt`
+- `GameHubLauncher-v<versao>-<commit>-<timestamp>.zip`
 
 Entrega recomendada para terceiros:
 - enviar a pasta `launcher/release` compactada
