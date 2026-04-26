@@ -31,6 +31,7 @@ function registerElectronLauncherHandlers() {
   const fs = runtimeRequire('node:fs');
   const fsPromises = runtimeRequire('node:fs/promises');
   const { spawn } = runtimeRequire('node:child_process');
+  const processObj = runtimeRequire('node:process');
 
   let StoreCtor: any;
   try {
@@ -76,6 +77,67 @@ function registerElectronLauncherHandlers() {
     const arrayBuffer = await response.arrayBuffer();
     await fsPromises.writeFile(outputPath, new Uint8Array(arrayBuffer));
   };
+
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const isLauncherResponsive = async () => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1500);
+      const response = await fetch('http://127.0.0.1:3001/metadata/search?q=ps2', { signal: controller.signal });
+      clearTimeout(timeoutId);
+      return response.ok;
+    } catch {
+      return false;
+    }
+  };
+
+  const resolveLauncherScript = () => {
+    const candidates = [
+      path.join(processObj.cwd(), 'launcher', 'start-safe.js'),
+      path.join(app.getAppPath(), 'launcher', 'start-safe.js'),
+      path.join(path.resolve(app.getAppPath(), '..'), 'launcher', 'start-safe.js'),
+    ];
+
+    return candidates.find((candidate) => fs.existsSync(candidate)) ?? '';
+  };
+
+  safeRemoveHandler('ensure-launcher-running');
+  ipcMain.handle('ensure-launcher-running', async () => {
+    if (await isLauncherResponsive()) {
+      return { running: true, started: false };
+    }
+
+    const launcherScript = resolveLauncherScript();
+    if (!launcherScript) {
+      return { running: false, started: false, error: 'Launcher start-safe.js nao encontrado.' };
+    }
+
+    try {
+      const child = spawn(processObj.execPath, [launcherScript], {
+        cwd: path.dirname(path.dirname(launcherScript)),
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+      });
+      child.unref();
+
+      for (let i = 0; i < 12; i += 1) {
+        if (await isLauncherResponsive()) {
+          return { running: true, started: true };
+        }
+        await sleep(250);
+      }
+
+      return { running: false, started: true, error: 'Launcher nao respondeu apos inicializacao.' };
+    } catch (error) {
+      return {
+        running: false,
+        started: false,
+        error: error instanceof Error ? error.message : 'Falha ao iniciar launcher em background.',
+      };
+    }
+  });
 
   safeRemoveHandler('save-pcsx2-path');
   ipcMain.handle('save-pcsx2-path', async (_event: unknown, pcsx2Path: string) => {

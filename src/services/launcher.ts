@@ -74,6 +74,12 @@ type DownloadDriveResponse = {
   filePath?: string;
 };
 
+type EnsureLauncherRunningResponse = {
+  running: boolean;
+  started: boolean;
+  error?: string;
+};
+
 function getElectronIpcRenderer(): IpcRendererLike | null {
   try {
     const maybeWindow = window as Window & {
@@ -107,7 +113,25 @@ function getLauncherOfflineMessage(): string {
   return `Nao foi possivel conectar ao launcher local (${LAUNCHER_BASE_URL}). Inicie com npm run launcher:start.`;
 }
 
-async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit, timeoutMs = 6000): Promise<T> {
+async function ensureLauncherRunningInBackground(): Promise<boolean> {
+  const ipcRenderer = getElectronIpcRenderer();
+  if (!ipcRenderer) return false;
+
+  try {
+    const result = (await ipcRenderer.invoke('ensure-launcher-running')) as EnsureLauncherRunningResponse;
+    if (!result?.running && result?.error) {
+      logError('launcher.ensureLauncherRunningInBackground', new Error(result.error), {
+        started: result.started,
+      });
+    }
+    return Boolean(result?.running);
+  } catch (error) {
+    logError('launcher.ensureLauncherRunningInBackground.invoke', error);
+    return false;
+  }
+}
+
+async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit, timeoutMs = 6000, allowAutoStart = true): Promise<T> {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
   const requestUrl = typeof input === 'string' ? input : input instanceof URL ? input.toString() : 'unknown-url';
@@ -139,6 +163,15 @@ async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit, timeou
         method: requestMethod,
         url: requestUrl,
       });
+
+      if (allowAutoStart) {
+        const started = await ensureLauncherRunningInBackground();
+        if (started) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1200));
+          return fetchJson<T>(input, init, timeoutMs, false);
+        }
+      }
+
       throw new Error(getLauncherOfflineMessage(), { cause: error });
     }
 
