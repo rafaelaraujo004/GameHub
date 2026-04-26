@@ -113,32 +113,6 @@ function getLauncherOfflineMessage(): string {
   return `Nao foi possivel conectar ao launcher local (${LAUNCHER_BASE_URL}). Em deploy (Vercel), o launcher precisa estar rodando no seu PC. Inicie com npm run launcher:start.`;
 }
 
-function isHttpUrl(value: string): boolean {
-  try {
-    const parsed = new URL(value);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
-
-function openExternalUrl(url: string): boolean {
-  try {
-    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-    return Boolean(newWindow);
-  } catch {
-    return false;
-  }
-}
-
-function canFallbackToBrowser(game: Game): boolean {
-  return isHttpUrl(game.link) && game.linkType !== 'local';
-}
-
-function getNonDesktopLocalPathMessage(): string {
-  return 'Este jogo usa caminho local do Windows e requer launcher no PC. Para outros dispositivos, use um link web (Drive/Mega/https).';
-}
-
 async function ensureLauncherRunningInBackground(): Promise<boolean> {
   const ipcRenderer = getElectronIpcRenderer();
   if (!ipcRenderer) return false;
@@ -279,47 +253,19 @@ export async function launchGame(game: Game): Promise<LaunchResult> {
     const source = deriveGameSource(game);
 
     if (!ipcRenderer) {
-      if (game.linkType === 'local') {
+      const jobId = await startSmartLaunch({
+        name: game.name,
+        link: game.link,
+        metadataId: game.metadataId,
+      });
+      const finalJob = await waitForLaunchCompletion(jobId, () => undefined);
+      if (finalJob.phase === 'error') {
         return {
           success: false,
-          error: getNonDesktopLocalPathMessage(),
+          error: finalJob.error || finalJob.message || 'Falha ao iniciar jogo.',
         };
       }
-
-      try {
-        const jobId = await startSmartLaunch({
-          name: game.name,
-          link: game.link,
-          metadataId: game.metadataId,
-        });
-        const finalJob = await waitForLaunchCompletion(jobId, () => undefined);
-        if (finalJob.phase === 'error') {
-          return {
-            success: false,
-            error: finalJob.error || finalJob.message || 'Falha ao iniciar jogo.',
-          };
-        }
-
-        return { success: true, mode: 'launcher' };
-      } catch (error) {
-        if (isNetworkFetchError(error) && canFallbackToBrowser(game)) {
-          const opened = openExternalUrl(game.link);
-          if (!opened) {
-            return {
-              success: false,
-              error: 'Nao foi possivel abrir o link do jogo automaticamente. Permita popups no navegador e tente novamente.',
-            };
-          }
-
-          return {
-            success: true,
-            mode: 'browser',
-            note: 'Abrimos o link do jogo no navegador porque o launcher local nao estava acessivel neste dispositivo.',
-          };
-        }
-
-        throw error;
-      }
+      return { success: true };
     }
 
     const pcsx2Path = await getPCSX2Path();
@@ -360,7 +306,7 @@ export async function launchGame(game: Game): Promise<LaunchResult> {
       };
     }
 
-    return { success: true, mode: 'launcher' };
+    return { success: true };
   } catch (error) {
     const isNetwork = isNetworkFetchError(error);
     logError('launcher.launchGame', error, {

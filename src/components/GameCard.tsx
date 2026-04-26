@@ -128,11 +128,7 @@ export const GameCard = memo(function GameCard({
         } else {
           setLaunchProgress(100);
           setLaunchStatus('success');
-          if (result.mode === 'browser') {
-            addToast(result.note || 'Link do jogo aberto no navegador.', 'info');
-          } else {
-            addToast('Jogo iniciado.', 'success');
-          }
+          addToast('Jogo iniciado.', 'success');
           setTimeout(() => {
             setLaunchStatus('idle');
             setLaunchProgress(0);
