@@ -8,6 +8,8 @@ export type LaunchConfig = {
 export type LaunchResult = {
   success: boolean;
   error?: string;
+  mode?: 'launcher' | 'browser';
+  note?: string;
 };
 
 export type GameSource = 'local' | 'google_drive';
