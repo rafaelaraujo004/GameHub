@@ -1157,6 +1157,25 @@ async function processPlayJob(jobId, payload, config) {
 function selectAllowedOrigin(reqOrigin, allowedOrigins) {
   if (!reqOrigin) return '';
 
+  let parsedOrigin;
+  try {
+    parsedOrigin = new URL(reqOrigin);
+  } catch {
+    return '';
+  }
+
+  const hostName = parsedOrigin.hostname.toLowerCase();
+  const protocol = parsedOrigin.protocol;
+
+  // Defaults seguros para funcionamento cross-machine sem ajuste manual de config
+  if (protocol === 'http:' && (hostName === 'localhost' || hostName === '127.0.0.1')) {
+    return reqOrigin;
+  }
+
+  if (protocol === 'https:' && hostName.endsWith('.vercel.app')) {
+    return reqOrigin;
+  }
+
   for (const allowedOrigin of allowedOrigins) {
     if (allowedOrigin === reqOrigin) return reqOrigin;
 
@@ -1206,10 +1225,12 @@ async function start() {
       }
 
       const requestedPrivateNetwork = String(req.headers['access-control-request-private-network'] ?? '').toLowerCase() === 'true';
+      const requestedHeadersRaw = String(req.headers['access-control-request-headers'] ?? '').trim();
+      const allowedHeaders = requestedHeadersRaw || 'Content-Type';
       const preflightHeaders = {
         'Access-Control-Allow-Origin': origin,
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': allowedHeaders,
         'Access-Control-Max-Age': '600',
         Vary: 'Origin',
       };
