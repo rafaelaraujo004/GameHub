@@ -53,6 +53,17 @@ Notas importantes:
 npm run launcher:start
 ```
 
+Para outra maquina (ou quando houver atualizacoes), use um unico comando:
+
+```bash
+npm run launcher:sync-start
+```
+
+Esse comando faz:
+- `git pull --ff-only`
+- `npm install`
+- `npm run launcher:start`
+
 ## API
 
 ### `POST /play`

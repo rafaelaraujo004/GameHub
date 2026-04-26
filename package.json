@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "launcher:start": "node launcher/start-safe.js",
+    "launcher:sync-start": "powershell -NoProfile -ExecutionPolicy Bypass -File launcher/update-and-start.ps1",
     "launcher:start:force": "node launcher/index.js"
   },
   "dependencies": {
