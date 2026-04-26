@@ -14,3 +14,5 @@ export interface Game {
 }
 
 export type GameFormData = Pick<Game, 'name' | 'platform' | 'link' | 'coverUrl' | 'metadataCoverUrl' | 'metadataId' | 'description'>;
+
+export * from './launcher';

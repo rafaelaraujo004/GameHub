@@ -12,6 +12,7 @@
     "launcher:start:force": "node launcher/index.js"
   },
   "dependencies": {
+    "electron-store": "^11.0.2",
     "firebase": "^12.12.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",

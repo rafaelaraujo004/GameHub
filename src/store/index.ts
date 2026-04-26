@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { User } from 'firebase/auth';
 import type { Game } from '../types';
+import type { LaunchStatus } from '../types';
 import type { LauncherJob } from '../services/launcher';
 
 interface AuthState {
@@ -27,6 +28,13 @@ interface ToastState {
   toasts: Toast[];
   addToast: (message: string, type: ToastType) => void;
   removeToast: (id: string) => void;
+}
+
+interface LauncherState {
+  launchStatus: LaunchStatus;
+  pcsx2Path: string | null;
+  setLaunchStatus: (status: LaunchStatus) => void;
+  setPCSX2Path: (path: string | null) => void;
 }
 
 export type ToastType = 'success' | 'error' | 'info';
@@ -70,6 +78,13 @@ export const useToastStore = create<ToastState>((set) => ({
   },
   removeToast: (id) =>
     set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
+}));
+
+export const useLauncherStore = create<LauncherState>((set) => ({
+  launchStatus: 'idle',
+  pcsx2Path: null,
+  setLaunchStatus: (status) => set({ launchStatus: status }),
+  setPCSX2Path: (path) => set({ pcsx2Path: path }),
 }));
 
 // ─── Downloads store ────────────────────────────────────────────────────────
