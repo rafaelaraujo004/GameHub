@@ -1718,6 +1718,70 @@
           "platform": "PS2"
         }
       ]
+    },
+    {
+      "version": "ps2-v2",
+      "provider": "rawg",
+      "query": "go",
+      "timestamp": 1777159812777,
+      "results": [
+        {
+          "id": "rawg_168057",
+          "name": "Go Go Golf",
+          "description": "Lancado em 2000-09-21 | Generos: Action",
+          "coverUrl": "https://media.rawg.io/media/screenshots/05c/05c223b4da063025f4b769a8d4844e48.jpg",
+          "platform": "PS2"
+        },
+        {
+          "id": "rawg_24791",
+          "name": "Go Diego Go! Safari Rescue",
+          "description": "Lancado em 2007-11-06 | Generos: Educational",
+          "coverUrl": "https://media.rawg.io/media/screenshots/2cf/2cf5e6cddeabbc4fe557967db78e6a5e.jpg",
+          "platform": "PS2"
+        },
+        {
+          "id": "rawg_39399",
+          "name": "Go, Diego Go! Great Dinosaur Rescue",
+          "description": "Lancado em 2008-10-27 | Generos: Platformer, Puzzle",
+          "coverUrl": "https://media.rawg.io/media/screenshots/f9e/f9edf72886d03c4956943cdfaee463f1.jpg",
+          "platform": "PS2"
+        },
+        {
+          "id": "rawg_1017189",
+          "name": "Go Kart Rally",
+          "description": "Lancado em 2007-04-20 | Generos: Racing, Sports",
+          "coverUrl": "https://media.rawg.io/media/screenshots/92c/92c3c040be0b845b52974b86b7d7b392.jpg",
+          "platform": "PS2"
+        },
+        {
+          "id": "rawg_4281",
+          "name": "Ratchet & Clank: Going Commando",
+          "description": "Lancado em 2003-11-11 | Generos: Shooter, Platformer, Action | Nota RAWG: 4.4/5 (98 avaliacoes) | Classificacao: Teen",
+          "coverUrl": "https://media.rawg.io/media/games/c03/c03965311ed72ba0629b84f4db45aebf.jpg",
+          "platform": "PS2"
+        },
+        {
+          "id": "rawg_1016954",
+          "name": "Densha de GO! Ryojou-hen",
+          "description": "Generos: Arcade",
+          "coverUrl": "https://media.rawg.io/media/screenshots/2e7/2e7a921ad03bf21db45da8469767efec.jpg",
+          "platform": "PS2"
+        },
+        {
+          "id": "rawg_1016955",
+          "name": "Densha de GO! Shinkansen: Sanyou Shinkansen-hen",
+          "description": "Lancado em 2001-09-20 | Generos: Arcade",
+          "coverUrl": "https://media.rawg.io/media/screenshots/40d/40d104e3759b150e260f035612ed7e92.jpg",
+          "platform": "PS2"
+        },
+        {
+          "id": "rawg_1016952",
+          "name": "Densha de Go! Final",
+          "description": "Lancado em 2004-05-27 | Generos: Arcade",
+          "coverUrl": "https://media.rawg.io/media/screenshots/551/551d8dfdf520a9035a09e68f8dc6b027.jpg",
+          "platform": "PS2"
+        }
+      ]
     }
   ]
 }

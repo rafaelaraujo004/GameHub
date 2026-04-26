@@ -642,27 +642,11 @@ async function pickLocalGameFilePath() {
 }
 
 function buildEmulatorArgs(emulatorPath, gamePath, extraArgs = [], bootConfig = { mode: 'auto', fullscreen: false, fastBoot: false }) {
-  const executable = path.basename(emulatorPath).toLowerCase();
   const args = [];
 
-  // Para PCSX2, garante boot direto sem ficar parado na interface.
-  if (executable.includes('pcsx2')) {
-    if (bootConfig.mode === 'nogui' || bootConfig.mode === 'auto') {
-      args.push('--nogui');
-    }
-    if (bootConfig.fastBoot) {
-      args.push('--fastboot');
-    }
-    if (bootConfig.fullscreen) {
-      args.push('--fullscreen');
-    }
-  }
-
-  if (Array.isArray(extraArgs) && extraArgs.length > 0) {
-    args.push(...extraArgs);
-  }
-
+  // Esta versao do PCSX2 so aceita o caminho do jogo, sem flags adicionais
   args.push(gamePath);
+
   return args;
 }
 
