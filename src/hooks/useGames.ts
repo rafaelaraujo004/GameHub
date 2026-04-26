@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { subscribeToGames } from '../services/games';
 import { useAuthStore, useGamesStore, useToastStore } from '../store';
+import { logError } from '../utils/logger';
 import { getFirebaseErrorMessage, isPermissionDenied } from '../utils/firebaseError';
 
 /**
@@ -33,7 +34,9 @@ export function useGames(): void {
         setGamesLoading(false);
       },
       (err) => {
-        console.error('Games subscription error:', err);
+        logError('useGames.subscribeToGames', err, {
+          userId: user.uid,
+        });
         const message = getFirebaseErrorMessage(err);
         setError(isPermissionDenied(err) ? 'Sem permissao para acessar seus jogos no Firestore.' : 'Erro ao carregar jogos. Tente novamente.');
         addToast(message, 'error');

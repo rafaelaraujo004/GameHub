@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { addGame, checkDuplicateName } from '../services/games';
 import { useAuthStore, useGamesStore, useToastStore } from '../store';
 import { isAbsoluteWindowsPath, isValidUrl } from '../utils';
+import { logError } from '../utils/logger';
 import { getFirebaseErrorMessage } from '../utils/firebaseError';
 import { pickLocalGamePath, searchGameMetadata, type MetadataSuggestion } from '../services/launcher';
 import type { GameFormData } from '../types';
@@ -109,13 +110,16 @@ export function AddGameModal({ onClose }: AddGameModalProps) {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
-      // Launcher offline → ignora silenciosamente (não mostra erro ao usuário)
+      logError('AddGameModal.fetchMetadata', error, { query });
+      // Launcher offline -> mostra dica acionavel, mas sem estourar erro tecnico cru no formulario.
       const isOffline =
         message.includes('ERR_CONNECTION_REFUSED') ||
         message.includes('Failed to fetch') ||
         message.includes('demorou para responder') ||
         message.includes('NetworkError');
-      if (!isOffline) {
+      if (isOffline) {
+        setMetadataError('Servico de metadados indisponivel. Inicie o launcher local com npm run launcher:start.');
+      } else {
         setMetadataError(message || 'Falha ao buscar metadados.');
       }
       setMetadataResults([]);
@@ -171,7 +175,11 @@ export function AddGameModal({ onClose }: AddGameModalProps) {
       addToast(`"${newGame.name}" adicionado!`, 'success');
       onClose();
     } catch (err) {
-      console.error(err);
+      logError('AddGameModal.handleSubmit', err, {
+        userId: user.uid,
+        gameName: form.name,
+        platform: form.platform,
+      });
       addToast(getFirebaseErrorMessage(err), 'error');
     } finally {
       setSubmitting(false);
@@ -224,6 +232,7 @@ export function AddGameModal({ onClose }: AddGameModalProps) {
       addToast('Arquivo local selecionado.', 'success');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Falha ao abrir explorador de arquivos.';
+      logError('AddGameModal.handleBrowseLocalFile', error);
       addToast(message, 'error');
     } finally {
       setBrowsingLocalFile(false);

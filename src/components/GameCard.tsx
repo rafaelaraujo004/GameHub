@@ -1,9 +1,10 @@
 import { memo, useState, useCallback, useEffect } from 'react';
 import type { Game } from '../types';
 import { getLinkIcon, isAbsoluteWindowsPath } from '../utils';
+import { logError } from '../utils/logger';
 import { deleteGame } from '../services/games';
-import { startSmartLaunch, waitForLaunchCompletion, type LauncherJob } from '../services/launcher';
-import { useGamesStore, useToastStore, useDownloadsStore } from '../store';
+import { getPCSX2Path, launchGame } from '../services/launcher';
+import { useGamesStore, useLauncherStore, useToastStore } from '../store';
 
 interface GameCardProps {
   game: Game;
@@ -78,13 +79,12 @@ export const GameCard = memo(function GameCard({
   onTrackView,
 }: GameCardProps) {
   const [playing, setPlaying] = useState(false);
-  const [launchState, setLaunchState] = useState<LauncherJob | null>(null);
+  const [launchProgress, setLaunchProgress] = useState(0);
   const [imgError, setImgError] = useState(false);
   const removeGameOptimistic = useGamesStore((s) => s.removeGameOptimistic);
+  const setLaunchStatus = useLauncherStore((s) => s.setLaunchStatus);
+  const setPCSX2Path = useLauncherStore((s) => s.setPCSX2Path);
   const addToast = useToastStore((s) => s.addToast);
-  const addActiveJob = useDownloadsStore((s) => s.addActiveJob);
-  const updateActiveJob = useDownloadsStore((s) => s.updateActiveJob);
-  const finishActiveJob = useDownloadsStore((s) => s.finishActiveJob);
 
   const isDownloadMode = !isAbsoluteWindowsPath(game.link);
 
@@ -95,56 +95,77 @@ export const GameCard = memo(function GameCard({
   const handlePlay = useCallback(() => {
     const run = async () => {
       setPlaying(true);
-      setLaunchState(null);
-      let jobId: string | null = null;
+      setLaunchStatus(isDownloadMode ? 'downloading' : 'launching');
+      setLaunchProgress(isDownloadMode ? 8 : 100);
+
+      let progressTimer: ReturnType<typeof setInterval> | null = null;
 
       try {
+        const pcsx2Path = await getPCSX2Path();
+        setPCSX2Path(pcsx2Path);
+        if (!pcsx2Path) {
+          setLaunchStatus('error');
+          addToast('PCSX2 nao configurado. Abra Configuracoes do PCSX2 e selecione o executavel.', 'error');
+          return;
+        }
+
         await onTrackPlay?.(game.id);
 
-        jobId = await startSmartLaunch({
-          name: game.name,
-          link: game.link,
-          metadataId: game.metadataId,
-        });
+        if (isDownloadMode) {
+          progressTimer = window.setInterval(() => {
+            setLaunchProgress((prev) => {
+              if (prev >= 90) return prev;
+              return prev + 6;
+            });
+          }, 220);
+        }
 
-        if (isDownloadMode) addActiveJob(jobId, game.name);
+        const result = await launchGame(game);
 
-        const finalJob = await waitForLaunchCompletion(jobId, (job) => {
-          setLaunchState(job);
-          if (isDownloadMode) updateActiveJob(jobId!, job);
-        });
-
-        if (isDownloadMode) finishActiveJob(jobId, finalJob);
-
-        if (finalJob.phase === 'error') {
-          addToast(finalJob.error || finalJob.message || 'Falha ao iniciar jogo.', 'error');
-          setLaunchState(finalJob);
+        if (!result.success) {
+          setLaunchStatus('error');
+          addToast(result.error || 'Falha ao iniciar jogo.', 'error');
         } else {
+          setLaunchProgress(100);
+          setLaunchStatus('success');
           addToast('Jogo iniciado.', 'success');
-          setTimeout(() => setLaunchState(null), 3000);
+          setTimeout(() => {
+            setLaunchStatus('idle');
+            setLaunchProgress(0);
+          }, 2200);
         }
       } catch (error) {
         const message = error instanceof Error
           ? error.message
-          : 'Launcher local indisponivel. Inicie o servico na porta 3001.';
+          : 'Falha ao iniciar jogo.';
+        logError('GameCard.handlePlay', error, {
+          gameId: game.id,
+          gameName: game.name,
+          gameLinkType: game.linkType,
+        });
+        setLaunchStatus('error');
         addToast(message, 'error');
-        const errorJob: LauncherJob = { id: jobId ?? '', phase: 'error', progress: 0, speedMbps: 0, etaSeconds: null, message, error: message };
-        if (jobId && isDownloadMode) finishActiveJob(jobId, errorJob);
-        setLaunchState(errorJob);
       } finally {
+        if (progressTimer) {
+          window.clearInterval(progressTimer);
+        }
         setPlaying(false);
       }
     };
 
     void run();
-  }, [game.id, game.name, game.link, game.metadataId, isDownloadMode, addToast, addActiveJob, updateActiveJob, finishActiveJob, onTrackPlay]);
+  }, [game, isDownloadMode, addToast, onTrackPlay, setLaunchStatus, setPCSX2Path]);
 
   const handleDelete = useCallback(async () => {
     removeGameOptimistic(game.id);
     try {
       await deleteGame(game.id);
       addToast(`"${game.name}" removido.`, 'success');
-    } catch {
+    } catch (error) {
+      logError('GameCard.handleDelete', error, {
+        gameId: game.id,
+        gameName: game.name,
+      });
       addToast('Erro ao remover jogo.', 'error');
     }
   }, [game.id, game.name, removeGameOptimistic, addToast]);
@@ -171,7 +192,7 @@ export const GameCard = memo(function GameCard({
       }}>
 
       {/* Cover */}
-      <div className="game-case-cover aspect-[10/14] relative overflow-hidden">
+      <div className="game-case-cover aspect-10/14 relative overflow-hidden">
         {(game.coverUrl || game.metadataCoverUrl) && !imgError ? (
           <img
             src={game.coverUrl || game.metadataCoverUrl}
@@ -223,7 +244,7 @@ export const GameCard = memo(function GameCard({
       </div>
 
       {/* Info */}
-      <div className="px-4 pt-[11px] pb-[14px]">
+      <div className="px-4 pt-2.75 pb-3.5">
         <h3 className="font-semibold text-[15px] text-[#f3f4f6] truncate leading-[1.2] tracking-[0.01em] mb-1.5" title={game.name}>
           {game.name}
         </h3>
@@ -266,42 +287,30 @@ export const GameCard = memo(function GameCard({
             handlePlay();
           }}
           disabled={playing}
-          className={`w-full py-[9px] rounded-[11px] text-sm font-semibold transition-all duration-150
+          className={`w-full py-2.25 rounded-[11px] text-sm font-semibold transition-all duration-150
             ${playing
               ? 'bg-[#00ff88]/30 text-[#00ff88] scale-95 cursor-default'
               : 'bg-[#00ff88]/10 text-[#00ff88] hover:bg-[#00ff88]/20 active:scale-95 border border-[#00ff88]/20 hover:border-[#00ff88]/50'
             }`}
         >
-          {playing ? '▶ Preparando...' : '▶ Jogar'}
+          {playing
+            ? (isDownloadMode ? '▶ Baixando...' : '▶ Iniciando...')
+            : '▶ Jogar'}
         </button>
 
-        {launchState && (
+        {playing && (
           <div className="mt-2 rounded-lg border border-white/10 bg-black/20 p-2 text-[11px] text-gray-300 space-y-1">
-            <p className={launchState.phase === 'error' ? 'text-red-400' : ''}>{launchState.message}</p>
-            {launchState.phase === 'downloading' && (
+            <p>{isDownloadMode ? 'Baixando arquivo do jogo...' : 'Iniciando PCSX2...'}</p>
+            {isDownloadMode && (
               <>
                 <div className="h-1.5 w-full rounded bg-white/10 overflow-hidden">
                   <div
                     className="h-full bg-[#00ff88] transition-all duration-300"
-                    style={{ width: `${Math.min(100, Math.max(0, launchState.progress))}%` }}
+                    style={{ width: `${Math.min(100, Math.max(0, launchProgress))}%` }}
                   />
                 </div>
-                <p>Downloading: {launchState.progress.toFixed(1)}%</p>
-                <p>Speed: {launchState.speedMbps.toFixed(2)} MB/s</p>
-                <p>Time remaining: {launchState.etaSeconds !== null ? `~${launchState.etaSeconds}s` : 'calculating...'}</p>
+                <p>Downloading: {launchProgress.toFixed(0)}%</p>
               </>
-            )}
-            {launchState.phase === 'error' && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlay();
-                }}
-                className="mt-1 w-full py-1 rounded-lg bg-yellow-500/10 text-yellow-400 border border-yellow-500/20
-                  text-[11px] font-semibold hover:bg-yellow-500/20 active:scale-95 transition-all"
-              >
-                ↩ Tentar novamente
-              </button>
             )}
           </div>
         )}

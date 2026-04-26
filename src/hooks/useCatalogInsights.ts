@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuthStore, useGamesStore, useToastStore } from '../store';
 import { isPs2Platform } from '../utils';
+import { logError } from '../utils/logger';
 import {
   setFavorite,
   setRating,
@@ -79,7 +80,9 @@ export function useCatalogInsights() {
         return;
       }
 
-      console.error(err);
+      logError('useCatalogInsights.subscriptionError', err, {
+        userId: user.uid,
+      });
       addToast('Falha ao sincronizar recursos personalizados do catalogo.', 'error');
     };
 
@@ -207,6 +210,7 @@ export function useCatalogInsights() {
         setEngagementEnabled(false);
         return;
       }
+      logError('useCatalogInsights.setGameFavorite', error, { gameId, favorite, userId: user.uid });
       throw error;
     }
   }, [user, engagementEnabled, isPermissionDenied]);
@@ -220,6 +224,7 @@ export function useCatalogInsights() {
         setEngagementEnabled(false);
         return;
       }
+      logError('useCatalogInsights.setGameRating', error, { gameId, score, userId: user.uid });
       throw error;
     }
   }, [user, engagementEnabled, isPermissionDenied]);
@@ -233,6 +238,7 @@ export function useCatalogInsights() {
         setEngagementEnabled(false);
         return;
       }
+      logError('useCatalogInsights.trackPlay', error, { gameId, userId: user.uid });
       throw error;
     }
   }, [user, engagementEnabled, isPermissionDenied]);
@@ -246,6 +252,7 @@ export function useCatalogInsights() {
         setEngagementEnabled(false);
         return;
       }
+      logError('useCatalogInsights.trackView', error, { gameId, userId: user.uid });
       throw error;
     }
   }, [user, engagementEnabled, isPermissionDenied]);

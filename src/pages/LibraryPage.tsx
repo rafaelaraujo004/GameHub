@@ -12,6 +12,10 @@ const AddGameModal = lazy(() =>
   import('../components/AddGameModal').then((m) => ({ default: m.AddGameModal }))
 );
 
+const PCSX2Settings = lazy(() =>
+  import('../components/PCSX2Settings').then((m) => ({ default: m.PCSX2Settings }))
+);
+
 const LibraryStats = memo(function LibraryStats({ count }: { count: number }) {
   return (
     <p className="text-xs text-gray-500 mt-0.5">
@@ -49,7 +53,7 @@ const GameDetailsModal = memo(function GameDetailsModal({
             {cover ? (
               <img src={cover} alt={game.name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full min-h-[320px] flex items-center justify-center text-6xl">🎮</div>
+              <div className="w-full h-full min-h-80 items-center justify-center text-6xl">🎮</div>
             )}
           </div>
 
@@ -281,10 +285,13 @@ export default function LibraryPage() {
   const catalog = useCatalogInsights();
   const totalPs2 = catalog.all.length;
   const [showModal, setShowModal] = useState(false);
+  const [showPCSX2Settings, setShowPCSX2Settings] = useState(false);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
   const handleOpenModal = useCallback(() => setShowModal(true), []);
   const handleCloseModal = useCallback(() => setShowModal(false), []);
+  const handleOpenPCSX2Settings = useCallback(() => setShowPCSX2Settings(true), []);
+  const handleClosePCSX2Settings = useCallback(() => setShowPCSX2Settings(false), []);
   const handleOpenDetails = useCallback((gameId: string) => {
     setSelectedGameId(gameId);
   }, []);
@@ -307,6 +314,12 @@ export default function LibraryPage() {
               <h2 className="text-xl font-bold text-white">Minha Biblioteca</h2>
               {!gamesLoading && <LibraryStats count={totalPs2} />}
             </div>
+            <button
+              onClick={handleOpenPCSX2Settings}
+              className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-300 hover:text-[#00ff88] hover:border-[#00ff88]/40 hover:bg-[#00ff88]/10 transition-colors"
+            >
+              Configurar PCSX2
+            </button>
           </div>
           <SearchBar onAddGame={handleOpenModal} />
         </div>
@@ -321,6 +334,12 @@ export default function LibraryPage() {
       {showModal && (
         <Suspense fallback={null}>
           <AddGameModal onClose={handleCloseModal} />
+        </Suspense>
+      )}
+
+      {showPCSX2Settings && (
+        <Suspense fallback={null}>
+          <PCSX2Settings onClose={handleClosePCSX2Settings} />
         </Suspense>
       )}
 
